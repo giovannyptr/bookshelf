@@ -6,9 +6,8 @@ services:
       POSTGRES_USER: bookshelf
       POSTGRES_PASSWORD: bookshelf
       POSTGRES_DB: bookshelf
-      POSTGRES_HOST_AUTH_METHOD: trust   # keep for dev
     ports:
-      - "5433:5432"   # ⬅ change host port to 5433
+      - "5433:5432"        # 👈 host 5433 -> container 5432
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

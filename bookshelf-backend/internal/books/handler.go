@@ -35,6 +35,13 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	g.DELETE("/:id", h.delete)
 }
 
+// Exported wrappers so cmd/server can wire routes per auth group.
+func (h *Handler) List(c *gin.Context)   { h.list(c) }
+func (h *Handler) Detail(c *gin.Context) { h.detail(c) }
+func (h *Handler) Create(c *gin.Context) { h.create(c) }
+func (h *Handler) Update(c *gin.Context) { h.update(c) }
+func (h *Handler) Delete(c *gin.Context) { h.delete(c) }
+
 // ------- handlers -------
 
 func (h *Handler) list(c *gin.Context) {

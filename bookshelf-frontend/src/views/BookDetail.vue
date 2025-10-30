@@ -2,7 +2,9 @@
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../lib/api";
+import { useAuth } from "../lib/auth";
 
+const { isAuthed } = useAuth();
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const route = useRoute();
 const router = useRouter();
@@ -24,7 +26,7 @@ async function fetchBook() {
     const { data } = await api.get(`/books/${id.value}`);
     const payload = data.data ?? data;
     book.value = payload;
-    // seed form
+
     form.value = {
       title: payload.title ?? "",
       author: payload.author ?? "",
@@ -45,9 +47,7 @@ async function save() {
   if (newCover.value?.files?.[0]) fd.append("cover", newCover.value.files[0]);
 
   try {
-    await api.put(`/books/${id.value}`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    await api.put(`/books/${id.value}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
     await fetchBook();
     if (newCover.value) newCover.value.value = "";
     alert("Saved!");
@@ -78,12 +78,7 @@ onMounted(fetchBook);
 
     <div v-if="book" class="wrap">
       <div class="left">
-        <img
-          v-if="book.coverUrl"
-          :src="API_BASE + book.coverUrl"
-          alt=""
-          class="cover"
-        />
+        <img v-if="book.coverUrl" :src="API_BASE + book.coverUrl" alt="" class="cover" />
         <div v-else class="placeholder">No cover</div>
       </div>
 
@@ -102,20 +97,25 @@ onMounted(fetchBook);
 
         <hr style="margin:16px 0;">
 
-        <h3 style="margin:0 0 8px;">Edit</h3>
-        <div class="grid">
-          <input v-model="form.title" placeholder="Title" class="input" />
-          <input v-model="form.author" placeholder="Author" class="input" />
-          <input v-model="form.category" placeholder="Category" class="input" />
-          <input v-model="form.price" type="number" step="0.01" placeholder="Price" class="input" />
-          <input v-model="form.stock" type="number" placeholder="Stock" class="input" />
-          <input ref="newCover" type="file" accept="image/*" class="input" />
-        </div>
+        <template v-if="isAuthed">
+          <h3 style="margin:0 0 8px;">Edit</h3>
+          <div class="grid">
+            <input v-model="form.title" placeholder="Title" class="input" />
+            <input v-model="form.author" placeholder="Author" class="input" />
+            <input v-model="form.category" placeholder="Category" class="input" />
+            <input v-model="form.price" type="number" step="0.01" placeholder="Price" class="input" />
+            <input v-model="form.stock" type="number" placeholder="Stock" class="input" />
+            <input ref="newCover" type="file" accept="image/*" class="input" />
+          </div>
 
-        <div class="row">
-          <button class="btn primary" @click="save">Save</button>
-          <button class="btn danger" @click="removeBook">Delete</button>
-        </div>
+          <div class="row">
+            <button class="btn primary" @click="save">Save</button>
+            <button class="btn danger" @click="removeBook">Delete</button>
+          </div>
+        </template>
+        <template v-else>
+          <p class="muted">Login to edit or delete this book.</p>
+        </template>
       </div>
     </div>
   </div>
@@ -124,7 +124,6 @@ onMounted(fetchBook);
 <style scoped>
 .wrap { display: grid; grid-template-columns: 180px 1fr; gap: 16px; margin-top: 12px; }
 .left { display:flex; align-items:flex-start; justify-content:center; }
-/* .right { } */
 .cover {
   width: 160px; height: 220px; object-fit: cover;
   border: 1px solid #eee; border-radius: 6px;
@@ -133,8 +132,6 @@ onMounted(fetchBook);
   width:160px; height:220px; border:1px dashed #ccc; border-radius:6px;
   display:flex; align-items:center; justify-content:center; color:#888;
 }
-
-/* shared mini styles */
 .input { padding:8px; border:1px solid #ddd; border-radius:6px; }
 .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; }
 .row { display:flex; gap:8px; margin-top:8px; }
