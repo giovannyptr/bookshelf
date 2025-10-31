@@ -2,7 +2,6 @@ package books
 
 import (
 	"fmt"
-	// "net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,23 +27,26 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	r.Static("/uploads", h.uploadDir)
 
 	g := r.Group("/books")
-	g.GET("", h.list)
-	g.GET("/:id", h.detail)
-	g.POST("", h.create)
-	g.PUT("/:id", h.update)
-	g.DELETE("/:id", h.delete)
+	g.GET("", h.List)
+	g.GET("/:id", h.Detail)
+	g.POST("", h.Create)
+	g.PUT("/:id", h.Update)
+	g.DELETE("/:id", h.Delete)
 }
 
-// Exported wrappers so cmd/server can wire routes per auth group.
-func (h *Handler) List(c *gin.Context)   { h.list(c) }
-func (h *Handler) Detail(c *gin.Context) { h.detail(c) }
-func (h *Handler) Create(c *gin.Context) { h.create(c) }
-func (h *Handler) Update(c *gin.Context) { h.update(c) }
-func (h *Handler) Delete(c *gin.Context) { h.delete(c) }
-
-// ------- handlers -------
-
-func (h *Handler) list(c *gin.Context) {
+// list godoc
+// @Summary List books
+// @Tags    books
+// @Produce json
+// @Param   q        query string false "Search by title/author"
+// @Param   category query string false "Filter by category"
+// @Param   page     query int    false "Page number"  default(1)
+// @Param   limit    query int    false "Page size (1-100)" default(10)
+// @Param   sort     query string false "Sort field" default(created_at)
+// @Param   order    query string false "ASC or DESC" default(DESC)
+// @Success 200 {object} api.PagedBooks
+// @Router  /books [get]
+func (h *Handler) List(c *gin.Context) {
 	q := strings.TrimSpace(c.Query("q"))
 	category := c.Query("category")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -63,13 +65,18 @@ func (h *Handler) list(c *gin.Context) {
 		api.Fail(c, 500, err.Error())
 		return
 	}
-
-	api.OK(c, gin.H{
-		"items": items, "total": total, "page": page, "limit": limit,
-	})
+	api.OK(c, gin.H{"items": items, "total": total, "page": page, "limit": limit})
 }
 
-func (h *Handler) detail(c *gin.Context) {
+// detail godoc
+// @Summary Get a book
+// @Tags    books
+// @Produce json
+// @Param   id path string true "Book ID"
+// @Success 200 {object} models.Book
+// @Failure 404 {object} api.ErrorResponse
+// @Router  /books/{id} [get]
+func (h *Handler) Detail(c *gin.Context) {
 	id := c.Param("id")
 	b, err := h.repo.ByID(id)
 	if err != nil {
@@ -79,7 +86,31 @@ func (h *Handler) detail(c *gin.Context) {
 	api.OK(c, b)
 }
 
-func (h *Handler) create(c *gin.Context) {
+type createForm struct {
+	Title    string  `form:"title"    example:"1984"`
+	Author   string  `form:"author"   example:"George Orwell"`
+	Category string  `form:"category" example:"Fiction"`
+	Price    float64 `form:"price"    example:"60000"`
+	Stock    int     `form:"stock"    example:"10"`
+}
+
+// create godoc
+// @Summary Create a book
+// @Tags    books
+// @Accept  multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param   title     formData string  true  "Title"
+// @Param   author    formData string  false "Author"
+// @Param   category  formData string  false "Category"
+// @Param   price     formData number  false "Price"
+// @Param   stock     formData integer false "Stock"
+// @Param   cover     formData file    false "Cover image (.jpg/.jpeg/.png/.webp)"
+// @Success 201 {object} models.Book
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 401 {object} api.ErrorResponse
+// @Router  /books [post]
+func (h *Handler) Create(c *gin.Context) {
 	title := c.PostForm("title")
 	if title == "" {
 		api.Fail(c, 400, "title is required")
@@ -87,7 +118,6 @@ func (h *Handler) create(c *gin.Context) {
 	}
 	author := c.PostForm("author")
 	category := c.PostForm("category")
-
 	var price float64
 	var stock int
 	if s := c.PostForm("price"); s != "" {
@@ -133,10 +163,28 @@ func (h *Handler) create(c *gin.Context) {
 		api.Fail(c, 500, err.Error())
 		return
 	}
-	api.Created(c, b)
+	c.JSON(201, b)
 }
 
-func (h *Handler) update(c *gin.Context) {
+// update godoc
+// @Summary Update a book
+// @Tags    books
+// @Accept  multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param   id        path     string  true  "Book ID"
+// @Param   title     formData string  false "Title"
+// @Param   author    formData string  false "Author"
+// @Param   category  formData string  false "Category"
+// @Param   price     formData number  false "Price"
+// @Param   stock     formData integer false "Stock"
+// @Param   cover     formData file    false "New cover"
+// @Success 200 {object} models.Book
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 401 {object} api.ErrorResponse
+// @Failure 404 {object} api.ErrorResponse
+// @Router  /books/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
 	id := c.Param("id")
 	b, err := h.repo.ByID(id)
 	if err != nil {
@@ -194,7 +242,17 @@ func (h *Handler) update(c *gin.Context) {
 	api.OK(c, b)
 }
 
-func (h *Handler) delete(c *gin.Context) {
+// delete godoc
+// @Summary Delete a book
+// @Tags    books
+// @Produce json
+// @Security BearerAuth
+// @Param   id path string true "Book ID"
+// @Success 200 {object} map[string]string
+// @Failure 401 {object} api.ErrorResponse
+// @Failure 404 {object} api.ErrorResponse
+// @Router  /books/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	b, err := h.repo.ByID(id)
 	if err != nil {

@@ -25,20 +25,28 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 }
 
 type registerDTO struct {
-	Email    string `form:"email" json:"email" binding:"required,email"`
-	Password string `form:"password" json:"password" binding:"required,min=6"`
-	Name     string `form:"name" json:"name"`
+	Email    string `json:"email" example:"user@mail.com"`
+	Password string `json:"password" example:"12345678"`
+	Name     string `json:"name" example:"User Name"`
 }
 
+// register godoc
+// @Summary Register new user
+// @Tags    auth
+// @Accept  json
+// @Produce json
+// @Param   payload body registerDTO true "Register payload"
+// @Success 201 {object} map[string]any
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 409 {object} api.ErrorResponse
+// @Router  /auth/register [post]
 func (h *Handler) register(c *gin.Context) {
 	var in registerDTO
-	if err := c.ShouldBind(&in); err != nil {
+	if err := c.ShouldBindJSON(&in); err != nil {
 		api.Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	in.Email = strings.ToLower(strings.TrimSpace(in.Email))
-
-	// ensure unique
 	if _, err := h.users.ByEmail(in.Email); err == nil {
 		api.Fail(c, http.StatusConflict, "email already registered")
 		return
@@ -50,36 +58,49 @@ func (h *Handler) register(c *gin.Context) {
 		return
 	}
 	token, _ := GenerateToken(u.ID, u.Email, u.Role)
-	api.Created(c, gin.H{"token": token, "user": gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "role": u.Role}})
+	c.JSON(http.StatusCreated, gin.H{"token": token, "user": gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "role": u.Role}})
 }
 
 type loginDTO struct {
-	Email    string `form:"email" json:"email" binding:"required,email"`
-	Password string `form:"password" json:"password" binding:"required"`
+	Email    string `json:"email" example:"admin@mail.com"`
+	Password string `json:"password" example:"adminbookshelf"`
 }
 
+// login godoc
+// @Summary Login
+// @Tags    auth
+// @Accept  json
+// @Produce json
+// @Param   payload body loginDTO true "Login payload"
+// @Success 200 {object} map[string]any
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 401 {object} api.ErrorResponse
+// @Router  /auth/login [post]
 func (h *Handler) login(c *gin.Context) {
 	var in loginDTO
-	if err := c.ShouldBind(&in); err != nil {
+	if err := c.ShouldBindJSON(&in); err != nil {
 		api.Fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	in.Email = strings.ToLower(strings.TrimSpace(in.Email))
 	u, err := h.users.ByEmail(in.Email)
-	if err != nil {
-		api.Fail(c, http.StatusUnauthorized, "invalid credentials")
-		return
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(in.Password)); err != nil {
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(in.Password)) != nil {
 		api.Fail(c, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	token, _ := GenerateToken(u.ID, u.Email, u.Role)
-	api.OK(c, gin.H{"token": token, "user": gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "role": u.Role}})
+	c.JSON(http.StatusOK, gin.H{"token": token, "user": gin.H{"id": u.ID, "email": u.Email, "name": u.Name, "role": u.Role}})
 }
 
+// me godoc
+// @Summary Current user
+// @Tags    auth
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Router  /auth/me [get]
 func (h *Handler) me(c *gin.Context) {
 	uid, _ := GetUserID(c)
 	role, _ := GetUserRole(c)
-	api.OK(c, gin.H{"id": uid, "role": role})
+	c.JSON(http.StatusOK, gin.H{"id": uid, "role": role})
 }
