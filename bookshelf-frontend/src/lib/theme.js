@@ -3,7 +3,7 @@ import { reactive, computed } from "vue";
 const STORAGE_KEY = "theme"; // 'light' | 'dark' | 'system'
 
 const state = reactive({
-  choice: localStorage.getItem(STORAGE_KEY) || "system", // user choice
+  choice: localStorage.getItem(STORAGE_KEY) || "system", 
 });
 
 function systemPrefersDark() {
@@ -17,18 +17,18 @@ function effectiveTheme() {
 
 function applyTheme() {
   const t = effectiveTheme();
-  // put theme on <html data-theme="dark|light">
+  
   document.documentElement.setAttribute("data-theme", t);
 }
 
 function setTheme(choice) {
-  state.choice = choice; // 'light' | 'dark' | 'system'
+  state.choice = choice; 
   localStorage.setItem(STORAGE_KEY, choice);
   applyTheme();
 }
 
 function initTheme() {
-  // react to system changes when in "system"
+  
   if (typeof window !== "undefined" && window.matchMedia) {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => { if (state.choice === "system") applyTheme(); };

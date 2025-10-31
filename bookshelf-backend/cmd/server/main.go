@@ -116,9 +116,20 @@ func main() {
 	r.Use(cors.New(cfg))
 
 	// ---- static uploads ----
-	uploadDir := "./uploads"
-	_ = os.MkdirAll(uploadDir, 0o755)
-	r.Static("/uploads", filepath.Clean(uploadDir))
+	// Choose the project-root /uploads by default, but allow override via env
+	root, _ := os.Getwd()
+	// If you run from cmd/server, root = .../bookshelf-backend/cmd/server
+	// So default to two levels up + /uploads
+	defaultUploads := filepath.Clean(filepath.Join(root, "..", "..", "uploads"))
+
+	// Allow override with UPLOAD_DIR
+	uploadDir := getenv("UPLOAD_DIR", defaultUploads)
+
+	log.Printf("🗂️ Serving uploads from: %s\n", uploadDir)
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		log.Fatalf("failed to create uploads dir: %v", err)
+	}
+	r.Static("/uploads", uploadDir)
 
 	// ---- health ----
 	// @Summary Health check

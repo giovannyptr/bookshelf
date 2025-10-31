@@ -9,7 +9,7 @@ const props = defineProps({
   },
   submitLabel: { type: String, default: "Save" },
   disabled: { type: Boolean, default: false },
-  showCoverInput: { type: Boolean, default: true }, // hide if needed
+  showCoverInput: { type: Boolean, default: true }, 
 });
 
 const emit = defineEmits(["submit", "update:modelValue"]);

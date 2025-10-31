@@ -3,13 +3,17 @@ import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { CATEGORY_OPTIONS } from "../lib/constants";
+import { formatIDR } from "../lib/format";
 import BookForm from "../components/BookForm.vue";
-import { formatIDR } from "../lib/format"
 
 const { isAuthed } = useAuth();
-const API_BASE = import.meta.env.VITE_API_BASE || "";
 const route = useRoute();
 const router = useRouter();
+
+// URL helper to fix cover path
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+const fullUrl = (p) => (!p ? "" : p.startsWith("http") ? p : `${API_BASE}${p}`);
 
 const id = ref(route.params.id);
 watch(() => route.params.id, v => { id.value = v; fetchBook(); });
@@ -18,7 +22,10 @@ const book = ref(null);
 const loading = ref(false);
 const error = ref("");
 
-const editModel = ref({ title:"", author:"", category:"", price:"", stock:"" });
+// edit model for BookForm
+const editModel = ref({
+  title: "", author: "", category: "", price: "", stock: ""
+});
 
 async function fetchBook() {
   loading.value = true; error.value = "";
@@ -72,14 +79,15 @@ onMounted(fetchBook);
 
     <div v-if="book" class="wrap">
       <div class="left">
-        <img v-if="book.coverUrl" :src="API_BASE + book.coverUrl" alt="" class="cover" />
+        <img v-if="book.coverUrl" :src="fullUrl(book.coverUrl)" alt="" class="cover" />
         <div v-else class="placeholder">No cover</div>
       </div>
 
       <div class="right">
         <h2 style="margin:0 0 8px;">{{ book.title }}</h2>
         <div class="muted" style="margin-bottom:12px;">
-          by <strong>{{ book.author || "Unknown" }}</strong> — <em>{{ book.category || "Uncategorized" }}</em>
+          by <strong>{{ book.author || "Unknown" }}</strong> —
+          <em>{{ book.category || "Uncategorized" }}</em>
         </div>
 
         <div class="meta">
@@ -94,6 +102,7 @@ onMounted(fetchBook);
           <h3 style="margin:0 0 8px;">Edit</h3>
           <BookForm
             v-model="editModel"
+            :category-options="CATEGORY_OPTIONS"
             submit-label="Save"
             @submit="save"
           />
@@ -112,12 +121,18 @@ onMounted(fetchBook);
 <style scoped>
 .wrap { display: grid; grid-template-columns: 180px 1fr; gap: 16px; margin-top: 12px; }
 .left { display:flex; align-items:flex-start; justify-content:center; }
-.cover { width: 160px; height: 220px; object-fit: cover; border: 1px solid #eee; border-radius: 6px; }
-.placeholder { width:160px; height:220px; border:1px dashed #ccc; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#888; }
+.cover {
+  width: 160px; height: 220px; object-fit: cover;
+  border: 1px solid var(--line,#eee); border-radius: 6px;
+}
+.placeholder {
+  width:160px; height:220px; border:1px dashed var(--line,#ccc); border-radius:6px;
+  display:flex; align-items:center; justify-content:center; color:#888;
+}
 .row { display:flex; gap:8px; margin-top:8px; }
-.btn { padding:8px 12px; border:1px solid #ddd; border-radius:6px; background:white; cursor:pointer; }
+.btn { padding:8px 12px; border:1px solid var(--line,#ddd); border-radius:6px; background: var(--bg,white); color: var(--fg,#111); cursor:pointer; }
 .btn.danger { border-color:#ffb8b8; background:#fff4f4; }
 .muted { color:#666; }
 .error { color:#b00020; margin:8px 0; }
-.meta { display:flex; gap:16px; flex-wrap:wrap; color:#333; }
+.meta { display:flex; gap:16px; flex-wrap:wrap; color:var(--fg,#333); }
 </style>

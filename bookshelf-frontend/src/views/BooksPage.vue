@@ -3,13 +3,16 @@ import { ref, onMounted } from "vue";
 import api from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { CATEGORY_OPTIONS } from "../lib/constants";
+import { formatIDR } from "../lib/format";
 import BookForm from "../components/BookForm.vue";
-import { formatIDR } from "../lib/format"
 
 const { isAuthed } = useAuth();
-const API_BASE = import.meta.env.VITE_API_BASE || "";
 
-// query state
+// --- URL helper to fix broken cover paths ---
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+const fullUrl = (p) => (!p ? "" : p.startsWith("http") ? p : `${API_BASE}${p}`);
+
+// --- query state ---
 const q = ref("");
 const category = ref("");
 const page = ref(1);
@@ -19,8 +22,14 @@ const items = ref([]);
 const loading = ref(false);
 const error = ref("");
 
-// create form state
-const createModel = ref({ title:"", author:"", category:"", price:"", stock:"" });
+// --- create form model (used by BookForm) ---
+const createModel = ref({
+  title: "",
+  author: "",
+  category: "",
+  price: "",
+  stock: ""
+});
 
 async function fetchBooks() {
   loading.value = true; error.value = "";
@@ -39,10 +48,16 @@ async function fetchBooks() {
 }
 
 function nextPage() {
-  if (page.value * limit.value < total.value) { page.value++; fetchBooks(); }
+  if (page.value * limit.value < total.value) {
+    page.value++;
+    fetchBooks();
+  }
 }
 function prevPage() {
-  if (page.value > 1) { page.value--; fetchBooks(); }
+  if (page.value > 1) {
+    page.value--;
+    fetchBooks();
+  }
 }
 
 async function createBook(fd) {
@@ -80,7 +95,7 @@ onMounted(fetchBooks);
       <button @click="fetchBooks" class="btn">Search</button>
     </div>
 
-    <!-- Create form (authed only) -->
+    <!-- Create form (only if logged in) -->
     <details v-if="isAuthed" class="card">
       <summary class="summary">+ Add new book</summary>
       <BookForm
@@ -108,7 +123,9 @@ onMounted(fetchBooks);
       </thead>
       <tbody>
         <tr v-for="b in items" :key="b.id">
-          <td><img v-if="b.coverUrl" :src="API_BASE + b.coverUrl" alt="" class="cover" /></td>
+          <td>
+            <img v-if="b.coverUrl" :src="fullUrl(b.coverUrl)" alt="" class="cover" />
+          </td>
           <td><router-link :to="`/books/${b.id}`">{{ b.title }}</router-link></td>
           <td>{{ b.author }}</td>
           <td>{{ b.category }}</td>
@@ -135,19 +152,19 @@ onMounted(fetchBooks);
 </template>
 
 <style scoped>
-.input { padding: 8px; border: 1px solid #ddd; border-radius: 6px; }
+.input { padding: 8px; border: 1px solid var(--line,#ddd); border-radius: 6px; background: var(--bg,white); color: var(--fg,#111);}
 .flex { flex: 1; }
 .w200 { width: 200px; }
-.btn { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; text-decoration: none; }
+.btn { padding: 8px 12px; border: 1px solid var(--line,#ddd); border-radius: 6px; background: var(--bg,white); color: var(--fg,#111); cursor: pointer; text-decoration: none; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn.danger { border-color: #ff9c9c; background: #fff3f3; }
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
 .card { margin: 12px 0; }
 .summary { cursor: pointer; font-weight: 600; }
 .table { width: 100%; border-collapse: collapse; }
-.table th, .table td { border-bottom: 1px solid #eee; padding: 8px; font-size: 14px; text-align: left; }
+.table th, .table td { border-bottom: 1px solid var(--line,#eee); padding: 8px; font-size: 14px; text-align: left; }
 .table th.right, .table td.right { text-align: right; }
-.cover { height: 48px; width: 48px; object-fit: cover; border: 1px solid #eee; border-radius: 4px; }
+.cover { height: 48px; width: 48px; object-fit: cover; border: 1px solid var(--line,#eee); border-radius: 4px; }
 .pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; }
 .muted { color: #666; }
 .error { color: #b00020; margin: 8px 0; }
