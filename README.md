@@ -9,12 +9,13 @@ A full-stack CRUD web app for managing books, built with:
 ---
 
 ## 🚀 Features
-✅ User authentication (JWT)  
+✅ User authentication (JWT) 
 ✅ Admin can create / edit / delete books  
 ✅ File upload for book covers  
 ✅ REST API with Swagger docs  
 ✅ CORS-ready for Vue frontend  
-✅ Auto-migration and admin seeding  
+✅ Auto-migration and admin seeding 
+✅ dark-light theme
 
 
 ## 🧠 Backend Setup (Gin + GORM)
