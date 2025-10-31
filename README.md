@@ -16,13 +16,14 @@ A full-stack CRUD web app for managing books, built with:
 ✅ CORS-ready for Vue frontend  
 ✅ Auto-migration and admin seeding  
 
----
- Project Structure
 
+## 🧠 Backend Setup (Gin + GORM)
 
-![Uploading image.png…]()
+### 1️⃣ Requirements
+- Go 1.21+
+- PostgreSQL
+- Swag CLI (`go install github.com/swaggo/swag/cmd/swag@latest`)
 
-
-
----
+### 2️⃣ Environment Variables
+Create `.env` inside `bookshelf-backend/` or export manually:
 
