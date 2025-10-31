@@ -2,11 +2,14 @@
 import { ref, onMounted } from "vue";
 import api from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { CATEGORY_OPTIONS } from "../lib/constants";
+import BookForm from "../components/BookForm.vue";
+import { formatIDR } from "../lib/format"
 
 const { isAuthed } = useAuth();
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
-// --- query state ---
+// query state
 const q = ref("");
 const category = ref("");
 const page = ref(1);
@@ -16,14 +19,11 @@ const items = ref([]);
 const loading = ref(false);
 const error = ref("");
 
-// --- create form state (authed only) ---
-const form = ref({ title: "", author: "", category: "", price: "", stock: "" });
-const cover = ref(null);
+// create form state
+const createModel = ref({ title:"", author:"", category:"", price:"", stock:"" });
 
-// ---- actions ----
 async function fetchBooks() {
-  loading.value = true;
-  error.value = "";
+  loading.value = true; error.value = "";
   try {
     const { data } = await api.get("/books", {
       params: { q: q.value, category: category.value, page: page.value, limit: limit.value },
@@ -39,27 +39,16 @@ async function fetchBooks() {
 }
 
 function nextPage() {
-  if (page.value * limit.value < total.value) {
-    page.value++;
-    fetchBooks();
-  }
+  if (page.value * limit.value < total.value) { page.value++; fetchBooks(); }
 }
 function prevPage() {
-  if (page.value > 1) {
-    page.value--;
-    fetchBooks();
-  }
+  if (page.value > 1) { page.value--; fetchBooks(); }
 }
 
-async function createBook() {
-  const fd = new FormData();
-  Object.entries(form.value).forEach(([k, v]) => fd.append(k, v));
-  if (cover.value?.files?.[0]) fd.append("cover", cover.value.files[0]);
-
+async function createBook(fd) {
   try {
     await api.post("/books", fd, { headers: { "Content-Type": "multipart/form-data" } });
-    form.value = { title: "", author: "", category: "", price: "", stock: "" };
-    if (cover.value) cover.value.value = "";
+    createModel.value = { title:"", author:"", category:"", price:"", stock:"" };
     await fetchBooks();
   } catch (e) {
     alert(e?.response?.data?.error || e.message);
@@ -84,22 +73,21 @@ onMounted(fetchBooks);
     <!-- Search / filter -->
     <div class="toolbar">
       <input v-model="q" placeholder="Search title/author..." class="input flex" />
-      <input v-model="category" placeholder="Category" class="input w200" />
+      <select v-model="category" class="input w200">
+        <option value="">All categories</option>
+        <option v-for="opt in CATEGORY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+      </select>
       <button @click="fetchBooks" class="btn">Search</button>
     </div>
 
-    <!-- Create form (only if logged in) -->
+    <!-- Create form (authed only) -->
     <details v-if="isAuthed" class="card">
       <summary class="summary">+ Add new book</summary>
-      <div class="grid">
-        <input v-model="form.title" placeholder="Title" class="input" />
-        <input v-model="form.author" placeholder="Author" class="input" />
-        <input v-model="form.category" placeholder="Category" class="input" />
-        <input v-model="form.price" type="number" step="0.01" placeholder="Price" class="input" />
-        <input v-model="form.stock" type="number" placeholder="Stock" class="input" />
-        <input ref="cover" type="file" accept="image/*" class="input" />
-      </div>
-      <button @click="createBook" class="btn mt8">Create</button>
+      <BookForm
+        v-model="createModel"
+        submit-label="Create"
+        @submit="createBook"
+      />
     </details>
 
     <div v-if="error" class="error">{{ error }}</div>
@@ -120,15 +108,11 @@ onMounted(fetchBooks);
       </thead>
       <tbody>
         <tr v-for="b in items" :key="b.id">
-          <td>
-            <img v-if="b.coverUrl" :src="API_BASE + b.coverUrl" alt="" class="cover" />
-          </td>
-          <td>
-            <router-link :to="`/books/${b.id}`">{{ b.title }}</router-link>
-          </td>
+          <td><img v-if="b.coverUrl" :src="API_BASE + b.coverUrl" alt="" class="cover" /></td>
+          <td><router-link :to="`/books/${b.id}`">{{ b.title }}</router-link></td>
           <td>{{ b.author }}</td>
           <td>{{ b.category }}</td>
-          <td class="right">{{ Number(b.price || 0).toFixed(2) }}</td>
+          <td class="right">{{ formatIDR(b.price) }}</td>
           <td class="right">{{ b.stock }}</td>
           <td class="right">
             <router-link :to="`/books/${b.id}`" class="btn">Detail</router-link>
@@ -160,8 +144,6 @@ onMounted(fetchBooks);
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
 .card { margin: 12px 0; }
 .summary { cursor: pointer; font-weight: 600; }
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.mt8 { margin-top: 8px; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { border-bottom: 1px solid #eee; padding: 8px; font-size: 14px; text-align: left; }
 .table th.right, .table td.right { text-align: right; }
