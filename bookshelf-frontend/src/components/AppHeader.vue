@@ -29,7 +29,7 @@ function themeLabel() {
 <template>
   <header class="site-header">
     <div class="wrap">
-      <h1 class="brand">📚 Bookshelf</h1>
+      <h1 class="brand">📚 Bookshelf by Gio</h1>
 
       <nav class="right">
         <button class="btn" @click="cycleTheme" title="Toggle theme">
