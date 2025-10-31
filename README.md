@@ -20,24 +20,8 @@ A full-stack CRUD web app for managing books, built with:
  Project Structure
 
 
-bookshelf/
-├─ bookshelf-backend/
-│ ├─ cmd/server/main.go # main entry
-│ ├─ internal/auth/ # login/register handlers
-│ ├─ internal/books/ # book CRUD handlers
-│ ├─ internal/users/ # user repository
-│ ├─ models/ # GORM models
-│ ├─ docs/ # auto-generated swagger files
-│ └─ go.mod / go.sum
-│
-├─ bookshelf-frontend/
-│ ├─ src/views/BooksPage.vue # list view
-│ ├─ src/views/BookDetail.vue # detail/edit view
-│ ├─ src/components/BookForm.vue # shared form
-│ ├─ src/lib/api.js # axios instance
-│ └─ .env
-│
-└─ uploads/ # image storage folder
+![Uploading image.png…]()
+
 
 
 ---
