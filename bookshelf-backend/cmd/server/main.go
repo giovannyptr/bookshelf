@@ -13,7 +13,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	// ⬇️ Update these if your module path differs in go.mod
 	"github.com/giovannyptr/bookshelf/internal/auth"
 	"github.com/giovannyptr/bookshelf/internal/books"
 	"github.com/giovannyptr/bookshelf/internal/users"
@@ -30,10 +29,8 @@ func env(key, def string) string {
 
 /* -------------------- main -------------------- */
 func main() {
-	// Load env from either repo root or cmd/server (works from both run locations)
 	_ = godotenv.Load(".env", "cmd/server/.env")
 
-	// Loud debug so we always see which DSN we’re using
 	wd, _ := os.Getwd()
 	log.Printf("DEBUG CWD=%s", wd)
 
@@ -41,7 +38,7 @@ func main() {
 	if dsn == "" {
 		// Fallback to DB_* pieces if DATABASE_URL not provided
 		host := env("DB_HOST", "127.0.0.1")
-		port := env("DB_PORT", "5433") // default to 5433 to dodge local 5432 collisions
+		port := env("DB_PORT", "5433")
 		user := env("DB_USER", "bookshelf")
 		pass := env("DB_PASSWORD", "bookshelf")
 		name := env("DB_NAME", "bookshelf")
@@ -55,13 +52,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
-	log.Println("✅ Connected to PostgreSQL successfully")
+	log.Println("Connected to PostgreSQL successfully")
 
 	// Auto-migrate
 	if err := db.AutoMigrate(&models.Book{}, &models.User{}); err != nil {
 		log.Fatalf("failed to migrate: %v", err)
 	}
-	log.Println("📘 Auto-migration completed")
+	log.Println(" Auto-migration completed")
 
 	// Repos
 	bookRepo := books.NewRepository(db)
@@ -88,7 +85,7 @@ func main() {
 		AllowOrigins: []string{
 			"http://localhost:5173",
 			"http://127.0.0.1:5173",
-			"http://localhost:4173", // vite preview
+			"http://localhost:4173",
 			"http://127.0.0.1:4173",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
@@ -120,7 +117,7 @@ func main() {
 
 	// Run server
 	port := env("APP_PORT", "8080")
-	log.Printf("🚀 Server running on http://localhost:%s", port)
+	log.Printf("Server running on http://localhost:%s", port)
 	log.Fatal(r.Run(":" + port))
 }
 
@@ -131,7 +128,7 @@ func ensureAdmin(userRepo *users.Repository) {
 	name := env("ADMIN_NAME", "Admin")
 
 	if u, _ := userRepo.ByEmail(email); u != nil {
-		log.Printf("👑 admin already exists: %s", email)
+		log.Printf(" admin already exists: %s", email)
 		return
 	}
 	hash, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
@@ -142,8 +139,8 @@ func ensureAdmin(userRepo *users.Repository) {
 		Role:     "admin",
 	}
 	if err := userRepo.Create(&admin); err != nil {
-		log.Printf("⚠️ failed to create admin: %v", err)
+		log.Printf(" failed to create admin: %v", err)
 		return
 	}
-	log.Printf("✅ Admin user created: %s (password from ADMIN_PASSWORD)", email)
+	log.Printf(" Admin user created: %s (password from ADMIN_PASSWORD)", email)
 }
