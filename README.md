@@ -17,8 +17,9 @@ A full-stack CRUD web app for managing books, built with:
 ✅ Auto-migration and admin seeding  
 
 ---
+ Project Structure
 
-## 🧩 Project Structure
+
 bookshelf/
 ├─ bookshelf-backend/
 │ ├─ cmd/server/main.go # main entry
